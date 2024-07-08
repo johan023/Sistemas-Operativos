@@ -1,0 +1,21 @@
+#!/bin/bash
+sorteo=1
+ficheroResultados=S${sorteo}R
+
+while read linea; do
+	# En cada iteración del bucle la variable linea tiene una linea del fichero
+	
+	#Este comando muestra 1 si en la línea hay un caracter # de comentario
+	#Es una forma de detectar los comentarios
+	echo $linea | grep -sc '#'
+	
+	#Asignaremos esto a una variable para poder comprobar en un if 
+	variable=$(echo $linea | grep -sc '#')
+	
+	if [ $variable -eq 1 ]; then
+	   echo Es una linea con comentario
+	else
+	   echo Es una linea sin comentario
+	fi
+done < $ficheroResultados
+

@@ -1,0 +1,126 @@
+#!/bin/bash
+
+#Constantes de los argumentos
+MAX_SORTEOS=15
+MAX_JUGADORES=10
+#Códigos de Error
+ERR_NUM_ARGS=1
+ERR_NUM_SORTEOS=2
+ERR_NUM_JUGADORES=3
+#Ejecución satisfactoria
+RET_OK=0
+RET_RR=1
+
+Sintaxis(){
+#-----------------------------------
+#Esta función se encarga de mostrar la ayuda de cómo utilizar el script y termina su ejecución
+#Recibe como parametro el código de terminación
+ 
+exit $1
+}
+ControlArgumentos(){
+# Esta función se encarga de controlar que los argumentos están en el rango permitido
+# Recibe el conjunto de argumentos que se han pasado al script
+# Devuelve un código de error indicando el tipo de error que se ha producido
+# Si piden ayuda con -? llama a Sintaxis con el código de retorno 0
+
+	if [[ "$1" == "-?" ]];
+	then
+		echo Ayuda
+		Sintaxis $RET_OK
+	fi
+	
+	if [ $# -gt 2 -o $# -lt 2 ];
+	then
+		return $ERR_NUM_ARGS
+	fi
+	
+	if [ $1 -gt $MAX_SORTEOS -o $1 -lt 1 ];
+	then
+		return $ERR_NUM_SORTEOS
+	fi
+	
+	if [ $2 -gt $MAX_JUGADORES -o $2 -lt 1 ];
+	then
+		return $ERR_NUM_JUGADORES
+	fi
+}
+
+LimpiarFicheros(){
+# Esta función elimina los ficheros de ejecuciones anteriores
+
+	rm -rf S[0-9]R
+	rm -rf S[0-9][0-9]R
+}
+
+Inicializar(){
+#Esta función se encarga de inicializar el array de premios
+#Recibe como parámetro el número de jugadores que entran en los sorteos que se ejecutan
+ 
+clear
+for jugador in `seq 1 $1`; do
+premios[$jugador]=0
+done
+}
+
+LeerFicherosPremio(){
+# Esta función se encarga de leer uno a uno los ficheros de premios
+# Recibe como parámetros el numero de sorteos y el de jugadores en cada sorteo
+# Rellenará el array de premios, sumando a cada jugador su importe correspondiente al numero de sorteo
+	for nsorteo in `seq 1 $1`; do
+		fichero="./S${nsorteo}R"
+		contJugador=1
+		while read -r linea; do
+		  if [[ "${linea:0:1}" == "#" ]]; then
+		  :
+		  else
+		  	premios[$contJugador]=$((${premios[$contJugador]}+linea))
+			contJugador=$((contJugador+1))
+		  fi
+		done < $fichero
+	done
+}
+
+MostrarResultados(){
+	echo "|-------------------------------------------------------|"
+	echo "|	Informe de resultados			      	|"
+	echo "|	Numero de Sorteos: $numSorteos   Número de Jugadores: $numJugadores	|"
+	echo "|-------------------------------------------------------|"
+	for nJugador in `seq 1 $2`; do
+	echo "|	Jugador $nJugador: Total premio: ${premios[$nJugador]}			|"
+	echo "|-------------------------------------------------------|"
+	done
+}
+ControlArgumentos $* #Si queremos sólo el primer parámetro, hacemos $1, etc.
+retVal=$?
+
+if [ $retVal -eq $ERR_NUM_ARGS ];
+then
+	echo El número de argumentos debe ser 2
+	Sintaxis $ERR_NUM_ARGS
+fi
+
+if [ $retVal -eq $ERR_NUM_SORTEOS ];
+then
+	echo El número de sorteos debe ser entre 1 y 15
+	Sintaxis $ERR_NUM_SORTEOS
+fi
+
+if [ $retVal -eq $ERR_NUM_JUGADORES ];
+then
+	echo El número de jugadores debe ser entre 1 y 10
+	Sintaxis $ERR_NUM_JUGADORES
+fi
+
+#Al superar el control de argumentos, asignamos los argumentos a las variables
+numSorteos=$1
+numJugadores=$2
+
+LimpiarFicheros
+Inicializar $2
+for nsorteo in `seq 1 $numSorteos`; do
+./sorteo $nsorteo $numJugadores
+done
+
+LeerFicherosPremio $numSorteos $numJugadores
+MostrarResultados $numSorteos $numJugadores
